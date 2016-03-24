@@ -132,11 +132,6 @@ class IPRoute(Sanji):
         """
         self.publish.event.put("/network/wan", data={"interface": interface})
 
-        # TODO: modify DNS to listen `/network/wan` instead
-        res = self.publish.put("/network/dns", data={"source": interface})
-        if res.code != 200:
-            raise RuntimeWarning(res.data["message"])
-
     def update_default(self, default):
         """
         Update default gateway. If updated failed, should recover to previous
