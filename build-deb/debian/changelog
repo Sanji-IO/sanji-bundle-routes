@@ -1,3 +1,10 @@
+sanji-bundle-route (1.0.3) unstable; urgency=low
+
+  * fix: Add "-pf" for `dhclient`.
+  * fix: Use "True/False" instead of "1/0".
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Thu, 09 Mar 2017 18:31:02 +0800
+
 sanji-bundle-route (1.0.2) unstable; urgency=low
 
   * Update pip deps.
