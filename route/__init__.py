@@ -35,9 +35,20 @@ class IPRoute(Model):
         super(IPRoute, self).__init__(*args, **kwargs)
 
         self._path = kwargs["path"]
+
+        """interface info. database
+        {
+          "interface": "wwan0",
+          "actualIface": "ppp0",
+          "gateway": "192.168.7.254",
+          "status": true,
+          "wan": true
+        }
+        """
         self._interfaces = {}
 
         # alias and real name mappings for interfaces
+        # { "ppp0": "wwan0" }
         self._alias = {}
 
         # find correct interface if shell command is required
@@ -129,10 +140,11 @@ class IPRoute(Model):
                 inet_ip = [inet["ip"]
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
+                _iface = self._alias.get(iface, iface)
                 if len(inet_ip) and \
-                        (iface in self._interfaces and
-                         self._interfaces[iface]["status"] is True and
-                         self._interfaces[iface]["wan"] is True):
+                        (_iface in self._interfaces and
+                         self._interfaces[_iface]["status"] is True and
+                         self._interfaces[_iface]["wan"] is True):
                     data.append(iface)
         return data
 
@@ -176,42 +188,64 @@ class IPRoute(Model):
             default["interface"] = gw["dev"]
         return default
 
+    def _update_default(self, iface=None, gateway=None):
+        """
+        Update default gateway. If updated failed, should recover to previous
+        one.
+
+        Args:
+            iface: interface
+            gateway: IP address of default gateway
+        """
+        ip.route.delete("default")
+        if not iface and not gateway:
+            raise IPRouteError("Invalid default route.")
+
+        # add the default gateway
+        # FIXME: only "gateway" without interface is also available
+        # FIXME: add "secondary" default route rule
+        if iface:
+            if gateway:
+                ip.route.add("default", iface, gateway)
+            else:
+                ip.route.add("default", iface)
+
+            if iface and self._wan_event_cb:
+                if iface not in self._alias:
+                    self._wan_event_cb(iface)
+                else:
+                    self._wan_event_cb(self._alias[iface], iface)
+        elif gateway:
+            ip.route.add("default", "", gateway)
+        else:
+            raise IPRouteError("Invalid default route.")
+
     def update_default(self, default):
         """
         Update default gateway. If updated failed, should recover to previous
         one.
 
         Args:
-            default: dict format with "interface" required and "gateway"
-                     optional.
+            default: dict format, require at least one of "interface" and
+                     "gateway"
+                example:
+                {
+                  "interface": "wwan0",
+                  "actualIface": "ppp0",
+                  "gateway": "192.168.7.254",
+                  "status": true,
+                  "wan": true
+                }
         """
-        # delete the default gateway
-        if not default or ("interface" not in default and
-                           "gateway" not in default):
-            ip.route.delete("default")
-
-        # change the default gateway
-        # FIXME: only "gateway" without interface is also available
-        # FIXME: add "secondary" default route rule
-        else:
-            ip.route.delete("default")
-            if "gateway" in default and "interface" in default:
-                ip.route.add("default", default["interface"],
-                             default["gateway"])
-            elif "interface" in default:
-                ip.route.add("default", default["interface"])
-            elif "gateway" in default:
-                ip.route.add("default", "", default["gateway"])
-            else:
-                raise IPRouteError("Invalid default route.")
-
-            # update DNS
-            if "interface" in default and self._wan_event_cb:
-                if default["interface"] not in self._alias:
-                    self._wan_event_cb(default["interface"])
-                else:
-                    self._wan_event_cb(self._alias[default["interface"]],
-                                       default["interface"])
+        iface = None
+        gateway = None
+        if "actualIface" in default and default["actualIface"]:
+            iface = default["actualIface"]
+        elif "interface" in default and default["interface"]:
+            iface = default["interface"]
+        if "gateway" in default and default["gateway"]:
+            gateway = default["gateway"]
+        return self._update_default(iface, gateway)
 
     def _try_update_default(self, routes):
         """
@@ -231,7 +265,7 @@ class IPRoute(Model):
         default = {}
         for iface in routes:
             if iface in ifaces:
-                default["interface"] = iface
+                default["interface"] = self._alias.get(iface, iface)
                 break
         else:
             self.update_default({})
@@ -286,12 +320,15 @@ class IPRoute(Model):
             iface["wan"] = True
 
         # update the router information
-        if iface["name"] not in self._interfaces:
-            self._interfaces[iface["name"]] = {}
-        self._interfaces[iface["name"]]["status"] = iface["status"]
-        self._interfaces[iface["name"]]["wan"] = iface["wan"]
+        name = iface["name"]
+        if name not in self._interfaces:
+            self._interfaces[name] = {}
+        self._interfaces[name]["status"] = iface["status"]
+        self._interfaces[name]["wan"] = iface["wan"]
         if "gateway" in iface:
-            self._interfaces[iface["name"]]["gateway"] = iface["gateway"]
+            self._interfaces[name]["gateway"] = iface["gateway"]
+        if "actualIface" in iface:
+            self._interfaces[name]["actualIface"] = iface["actualIface"]
 
         # update interface list
         self._routes = self._get_priority_list()
