@@ -18,6 +18,7 @@ class Index(Sanji):
     GET_DEFAULT_SCHEMA = Schema({
         Optional("interface"): Any(str, unicode, Length(1, 255)),
         Optional("gateway"): Any(str, unicode, Length(1, 255)),
+        Optional("actualIface"): Any(str, unicode, Length(1, 255)),
         Required("priorityList"): [Any(str, unicode, Length(1, 255))]
     }, extra=REMOVE_EXTRA)
 
@@ -33,14 +34,18 @@ class Index(Sanji):
             path=path_root)
         self.route.set_wan_event_cb(self.update_wan_info)
 
-    def update_wan_info(self, interface):
+    def update_wan_info(self, interface, actual_iface=None):
         """
         Update WAN interface to default gateway's interface.
 
         Args:
             default: interface name
         """
-        self.publish.event.put("/network/wan", data={"interface": interface})
+        data = {}
+        data["interface"] = interface
+        if actual_iface:
+            data["actualIface"] = actual_iface
+        self.publish.event.put("/network/wan", data=data)
 
     @Route(methods="get", resource="/network/routes/default")
     def get_default(self, message, response):

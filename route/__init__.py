@@ -37,6 +37,9 @@ class IPRoute(Model):
         self._path = kwargs["path"]
         self._interfaces = {}
 
+        # alias and real name mappings for interfaces
+        self._alias = {}
+
         # find correct interface if shell command is required
         self._load_mappings(self._path)
         self._cmd_regex = re.compile(r"\$\(([\S\s]+)\)")
@@ -84,6 +87,8 @@ class IPRoute(Model):
         for iface in self.model.db:
             name = self._get_iface_name(iface)
             if name and name != "":
+                if name != iface:
+                    self._alias[name] = iface
                 routes.append(name)
                 continue
         return routes
@@ -164,7 +169,11 @@ class IPRoute(Model):
         default["wan"] = True
         default["status"] = True
         default["gateway"] = gw["default"]
-        default["interface"] = gw["dev"]
+        if gw["dev"] in self._alias:
+            default["interface"] = self._alias[gw["dev"]]
+            default["actualIface"] = gw["dev"]
+        else:
+            default["interface"] = gw["dev"]
         return default
 
     def update_default(self, default):
@@ -198,7 +207,11 @@ class IPRoute(Model):
 
             # update DNS
             if "interface" in default and self._wan_event_cb:
-                self._wan_event_cb(default["interface"])
+                if default["interface"] not in self._alias:
+                    self._wan_event_cb(default["interface"])
+                else:
+                    self._wan_event_cb(self._alias[default["interface"]],
+                                       default["interface"])
 
     def _try_update_default(self, routes):
         """
