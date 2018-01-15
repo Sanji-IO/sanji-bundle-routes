@@ -75,7 +75,7 @@ class Index(Sanji):
         if type(message.data) is list:
             for iface in message.data:
                 self.route.update_iface_db(iface)
-            return response(data=self.interfaces)
+            return response(data=self.route.get_iface_db())
         elif type(message.data) is dict:
             self.route.update_iface_db(message.data)
             return response(data=message.data)
