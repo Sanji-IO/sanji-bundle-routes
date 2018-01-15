@@ -36,7 +36,7 @@ class IPRoute(Model):
         super(IPRoute, self).__init__(*args, **kwargs)
 
         self._path = kwargs["path"]
-        self.interfaces = {}
+        self._interfaces = {}
 
         # find correct interface if shell command is required
         self._load_mappings(self._path)
@@ -126,9 +126,9 @@ class IPRoute(Model):
                            for inet in iface_info["inet"]
                            if "" != inet["ip"]]
                 if len(inet_ip) and \
-                        (iface in self.interfaces and
-                         self.interfaces[iface]["status"] is True and
-                         self.interfaces[iface]["wan"] is True):
+                        (iface in self._interfaces and
+                         self._interfaces[iface]["status"] is True and
+                         self._interfaces[iface]["wan"] is True):
                     data.append(iface)
         return data
 
@@ -225,7 +225,7 @@ class IPRoute(Model):
             return
 
         # find gateway by interface
-        default.update(self.interfaces[default["interface"]])
+        default.update(self._interfaces[default["interface"]])
 
         current = self.get_default()
         if current.get("interface", "") != default.get("interface", "") or \
@@ -273,12 +273,12 @@ class IPRoute(Model):
             iface["wan"] = True
 
         # update the router information
-        if iface["name"] not in self.interfaces:
-            self.interfaces[iface["name"]] = {}
-        self.interfaces[iface["name"]]["status"] = iface["status"]
-        self.interfaces[iface["name"]]["wan"] = iface["wan"]
+        if iface["name"] not in self._interfaces:
+            self._interfaces[iface["name"]] = {}
+        self._interfaces[iface["name"]]["status"] = iface["status"]
+        self._interfaces[iface["name"]]["wan"] = iface["wan"]
         if "gateway" in iface:
-            self.interfaces[iface["name"]]["gateway"] = iface["gateway"]
+            self._interfaces[iface["name"]]["gateway"] = iface["gateway"]
 
         # update interface list
         self._routes = self._get_priority_list()
@@ -287,7 +287,7 @@ class IPRoute(Model):
         self.try_update_default(self._routes)
 
     def get_iface_db(self):
-        return self.interfaces
+        return self._interfaces
 
 
 if __name__ == "__main__":
