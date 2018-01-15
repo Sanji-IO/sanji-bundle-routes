@@ -5,7 +5,7 @@
   "email": "aeluin.chen@moxa.com",
   "description": "Handles the routing table",
   "license": "MOXA",
-  "main": "route.py",
+  "main": "index.py",
   "argument": "",
   "priority": 19,
   "concurrent": false,

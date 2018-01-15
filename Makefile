@@ -14,7 +14,8 @@ PROJECT_STAGING_DIR = $(STAGING_DIR)/$(DISTDIR)
 TARGET_FILES = \
 	bundle.json \
 	requirements.txt \
-	route.py \
+	index.py \
+	route/__init__.py \
 	data/route.json.factory \
 	ip/__init__.py \
 	ip/addr.py \
@@ -42,7 +43,7 @@ clean:
 distclean: clean
 
 pylint:
-	flake8 -v --exclude=.git,__init__.py .
+	flake8 -v --exclude=.git,ip .
 test:
 	nosetests --with-coverage --cover-erase --cover-package=$(NAME) -v
 
