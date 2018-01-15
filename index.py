@@ -94,7 +94,7 @@ class Index(Sanji):
     @Route(methods="put", resource="/network/interfaces/:name")
     def _event_update_db(self, message):
         message.data["name"] = message.param["name"]
-        self.route.update_router_db(message.data)
+        self.route.update_iface_db(message.data)
 
 
 if __name__ == "__main__":
