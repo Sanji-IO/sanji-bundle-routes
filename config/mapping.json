@@ -1,0 +1,7 @@
+[
+    {
+        "alias": "wwan{}",
+        "pattern": "^wwan([0-9]+)$",
+        "name": "$(cell_mgmt -i {} module_info | grep -Po '(?<=WWAN_node: )([a-z]+[0-9]+)(?=$)')"
+    }
+]

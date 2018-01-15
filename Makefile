@@ -16,6 +16,7 @@ TARGET_FILES = \
 	requirements.txt \
 	index.py \
 	route/__init__.py \
+	config/mapping.json \
 	data/route.json.factory \
 	ip/__init__.py \
 	ip/addr.py \

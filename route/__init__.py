@@ -39,26 +39,54 @@ class IPRoute(Model):
         self.interfaces = {}
 
         # find correct interface if shell command is required
+        self._load_mappings(self._path)
         self._cmd_regex = re.compile(r"\$\(([\S\s]+)\)")
-        self._routes = self._get_routes()
+        self._routes = self._get_priority_list()
 
     def set_wan_event_cb(self, cb):
         self._wan_event_cb = cb
 
-    def _get_routes(self):
-        routes = []
-        for iface in self.model.db:
-            match = self._cmd_regex.match(iface)
+    def _load_mappings(self, path):
+        with open(os.path.join(path, "config", "mapping.json")) as f:
+            self._mappings = json.load(f)
+
+        for mapping in self._mappings:
+            mapping["regex"] = re.compile(mapping["pattern"])
+
+    def _get_iface_name(self, name):
+        for mapping in self._mappings:
+            match = mapping["regex"].match(name)
             if not match:
-                routes.append(iface)
                 continue
+            _iface = mapping["name"].format(*match.groups())
+
+            match = self._cmd_regex.match(_iface)
+            if not match:
+                return _iface
+
             try:
-                with open("{}/iface_cmd.sh".format(self._path_root), "w") as f:
+                with open("{}/iface_cmd.sh".format(
+                        os.path.join(self._path, "config")), "w") as f:
                     f.write(match.group(1))
-                _iface = sh.sh("{}/iface_cmd.sh".format(self._path_root))
-                routes.append(str(_iface).rstrip())
+                _iface = str(sh.sh("{}/iface_cmd.sh".format(
+                    os.path.join(self._path, "config")))).rstrip()
+                if _iface == "":
+                    return None
+                return _iface
             except Exception as e:
                 _logger.debug(e)
+                return None
+        return name
+
+    def _get_priority_list(self):
+        """Get priority list with real interface name for default route
+        """
+        routes = []
+        for iface in self.model.db:
+            name = self._get_iface_name(iface)
+            if name and name != "":
+                routes.append(name)
+                continue
         return routes
 
     def run(self):
@@ -115,7 +143,7 @@ class IPRoute(Model):
         self.model.db = priority_list
         self.save()
 
-        self._routes = self._get_routes()
+        self._routes = self._get_priority_list()
         self.try_update_default(self._routes)
         return self.model.db
 
@@ -251,6 +279,9 @@ class IPRoute(Model):
         self.interfaces[iface["name"]]["wan"] = iface["wan"]
         if "gateway" in iface:
             self.interfaces[iface["name"]]["gateway"] = iface["gateway"]
+
+        # update interface list
+        self._routes = self._get_priority_list()
 
         # check if the default gateway need to be modified
         self.try_update_default(self._routes)
