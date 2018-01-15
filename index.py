@@ -8,12 +8,22 @@ from sanji.core import Sanji
 from sanji.core import Route
 from sanji.connection.mqtt import Mqtt
 from voluptuous import Schema
-from voluptuous import Any, Required, Length, REMOVE_EXTRA
+from voluptuous import Any, Required, Optional, Length, REMOVE_EXTRA
 from route import IPRoute
 
 
 class Index(Sanji):
     _logger = logging.getLogger("sanji.route.index")
+
+    GET_DEFAULT_SCHEMA = Schema({
+        Optional("interface"): Any(str, unicode, Length(1, 255)),
+        Optional("gateway"): Any(str, unicode, Length(1, 255)),
+        Required("priorityList"): [Any(str, unicode, Length(1, 255))]
+    }, extra=REMOVE_EXTRA)
+
+    PUT_DEFAULT_SCHEMA = Schema({
+        Required("priorityList"): [Any(str, unicode, Length(1, 255))]
+    }, extra=REMOVE_EXTRA)
 
     def init(self, *args, **kwargs):
         path_root = os.path.abspath(os.path.dirname(__file__))
@@ -38,15 +48,11 @@ class Index(Sanji):
         if data is None:
             data = {}
         data["priorityList"] = self.route.get_priority_list()
-        return response(data=data)
-
-    put_default_schema = Schema({
-        Required("priorityList"): [Any(str, unicode, Length(1, 255))]
-    }, extra=REMOVE_EXTRA)
+        return response(data=Index.GET_DEFAULT_SCHEMA(data))
 
     @Route(methods="put", resource="/network/routes/default")
     def put_default(self, message, response,
-                    schema=put_default_schema):
+                    schema=PUT_DEFAULT_SCHEMA):
         """
         Update the default gateway, delete default gateway if data is None or
         empty.
