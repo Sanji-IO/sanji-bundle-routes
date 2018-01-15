@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 import os
-import netifaces
 import logging
 from threading import Lock
 from time import sleep
@@ -154,17 +153,18 @@ class IPRoute(Model):
         Return:
             default: dict format with "interface" and/or "gateway"
         """
-        gws = netifaces.gateways()
+        gws = ip.route.show()
         default = {}
-        if gws['default'] != {} and netifaces.AF_INET in gws['default']:
-            gw = gws['default'][netifaces.AF_INET]
+        for gw in gws:
+            if "default" in gw:
+                break
         else:
             return default
 
         default["wan"] = True
         default["status"] = True
-        default["gateway"] = gw[0]
-        default["interface"] = gw[1]
+        default["gateway"] = gw["default"]
+        default["interface"] = gw["dev"]
         return default
 
     def update_default(self, default):
