@@ -1,3 +1,12 @@
+sanji-bundle-route (1.3.0) unstable; urgency=low
+
+  * refactor: Separate index & route.
+  * fix: Add mapping table for dynamic interfaces.
+  * fix: Remove extra fields of get data.
+  * fix: Reuse ip.route to get gateway without IP.
+
+ -- Aeluin Chen <aeluin.chen@moxa.com>  Tue, 16 Jan 2018 11:26:39 +0800
+
 sanji-bundle-route (1.2.0) unstable; urgency=low
 
   * feat: Support `status` and `wan`.
