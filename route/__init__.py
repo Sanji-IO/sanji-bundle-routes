@@ -185,8 +185,8 @@ class IPRoute(Model):
 
     def get_default(self):
         default = self._get_default()
-        _iface = default["interface"]
-        if _iface in self._alias:
+        _iface = default.get("interface")
+        if _iface and _iface in self._alias:
             default["interface"] = self._alias[_iface]
             default["actualIface"] = _iface
         return default
