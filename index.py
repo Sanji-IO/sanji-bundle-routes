@@ -41,11 +41,21 @@ class Index(Sanji):
         Args:
             default: interface name
         """
-        data = {}
-        data["interface"] = interface
+        data_wan = {}
+        data_sys = {
+            "data":{
+                "interface":""
+            }
+        }
+        
+        data_wan["interface"] = interface
+        data_sys["data"]["interface"] = interface
         if actual_iface:
-            data["actualIface"] = actual_iface
-        self.publish.event.put("/network/wan", data=data)
+            data_wan["actualIface"] = actual_iface
+            data_sys["data"]["actualIface"] = actual_iface
+        
+        self.publish.event.put("/network/wan", data=data_wan)
+        self.publish.put("/system/properties/route", timeout=5, data=data_sys)
 
     @Route(methods="get", resource="/network/routes/default")
     def get_default(self, message, response):
