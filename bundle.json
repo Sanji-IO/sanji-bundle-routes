@@ -20,6 +20,11 @@
       "resource": "/network/interfaces/:name"
     },
     {
+      "role": "view",
+      "methods": ["put"],
+      "resource": "/system/properties/route"
+    },
+    {
       "methods": ["get","put"],
       "resource": "/network/routes/default"
     }
