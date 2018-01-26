@@ -1,3 +1,9 @@
+sanji-bundle-route (1.4.0) unstable; urgency=low
+
+  * feat : Add item system/properties/route and update interface here.
+
+ -- GaryWL Hsu <garywl.hsu@moxa.com>  Fri, 26 Jan 2017 11:43:31 -0500
+ 
 sanji-bundle-route (1.3.0) unstable; urgency=low
 
   * refactor: Separate index & route.
